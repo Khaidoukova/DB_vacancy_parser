@@ -1,22 +1,21 @@
 import psycopg2
 import requests
+from utils import get_vacancies, get_company_info
 
 
 class DBManager:
-    employer_ids = ['1723062', '3542906', '810277', '4934', '42600']
+
+    def __init__(self, database_name, params):
+        self.database_name = database_name
+        self.params = params
+
+    def creat_database(self, database_name, params):
+        pass
+
 
     def get_companies_and_vacancies_count(self, employer_id, per_page=100):
+        pass
 
-        url = "https://api.hh.ru/vacancies"
-        params = {'per_page': per_page,
-                  'employer_id': employer_id}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        }
-        response = requests.get(url, params=params, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            return data
 
     def get_all_vacancies(self):
         pass
@@ -29,3 +28,4 @@ class DBManager:
 
     def get_vacancies_with_keyword(self):
         pass
+
