@@ -4,8 +4,7 @@ from config import config
 import psycopg2
 import requests
 #
-employer_ids = ['1723062', '3542906', '810277', '4934', '42600']
-data = []
+
 def get_vacancies(employer_id, per_page = 100):
     v_list = []
     url = "https://api.hh.ru/vacancies"
@@ -39,35 +38,32 @@ def get_vacancies(employer_id, per_page = 100):
 
             v_list.append(v_dict)
 
-        return v_list
-#for employer_id in employer_ids:
-    #n = get_vacancies(employer_id, 100)
-   # pprint(n)
+    return v_list
 
-def get_company_info(employer_ids):
+
+def get_company_info(employer_id):
     comp_list = []
 
-    for employer_id in employer_ids:
-        url = f"https://api.hh.ru/employers/{employer_id}"
-        params = {'employer_id': employer_id}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        }
-        response = requests.get(url, params=params, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            company_id = data['id']
-            company_name = data['name']
-            number_of_vacancies = data['open_vacancies']
-            comp_dict = {'company_id': company_id,
-                         'company_name': company_name,
-                         'number_of_vacancies': number_of_vacancies}
-            comp_list.append(comp_dict)
+    url = f"https://api.hh.ru/employers/{employer_id}"
+    params = {'employer_id': employer_id}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    }
+    response = requests.get(url, params=params, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        company_id = data['id']
+        company_name = data['name']
+        number_of_vacancies = data['open_vacancies']
+        comp_dict = {'company_id': company_id,
+                        'company_name': company_name,
+                        'number_of_vacancies': number_of_vacancies}
+        comp_list.append(comp_dict)
 
     return comp_list
 
 
-def create_database(database_name, params):
+def create_database(database_name):
     conn = psycopg2.connect(host='localhost', user='postgres', password='320670', port=5432)
     conn.autocommit = True
     cur = conn.cursor()
@@ -85,12 +81,43 @@ def create_database(database_name, params):
             company_name varchar(255),
             number_of_vacancies int                  
         )""")
+
+    with conn.cursor() as cur:
+        cur.execute("""
+        CREATE TABLE vacancies (
+        vacancy_name varchar(255),
+        company_id int,
+        salary_from int,
+        salary_to int,
+        url text)""")
     conn.commit()
     conn.close()
 
+def save_data_to_database(data1, data2, database_name):
+    conn = psycopg2.connect(dbname=database_name, host='localhost', user='postgres', password='320670', port=5432)
+    cur = conn.cursor()
+    for item in data1:
+        for m in item:
+            values = (m['company_id'], m['company_name'], m['number_of_vacancies'])
+            cur.execute(
+                """
+                INSERT INTO company_info (company_id, company_name, number_of_vacancies)
+                VALUES (%s, %s, %s)
+                """, values)
 
-params = config()
-create_database('HeadHunter', params)
+
+    for vacancy in data2:
+        for v in vacancy:
+            values = (v['vac_name'], v['company_id'], v['salary_min'], v['salary_max'], v['url'])
+
+            cur.execute(
+                """
+                INSERT INTO vacancies (vacancy_name, company_id, salary_from, salary_to, url)
+                VALUES (%s, %s, %s, %s, %s)""", values)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 

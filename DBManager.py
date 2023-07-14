@@ -9,13 +9,8 @@ class DBManager:
         self.database_name = database_name
         self.params = params
 
-    def creat_database(self, database_name, params):
-        pass
-
-
     def get_companies_and_vacancies_count(self, employer_id, per_page=100):
         pass
-
 
     def get_all_vacancies(self):
         pass
@@ -28,4 +23,3 @@ class DBManager:
 
     def get_vacancies_with_keyword(self):
         pass
-
