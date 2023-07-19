@@ -1,15 +1,14 @@
-from pprint import pprint
-from config import config
-
 import psycopg2
 import requests
-#
+from config import config
 
-def get_vacancies(employer_id, per_page = 100):
+
+def get_vacancies(employer_id, per_page=100):
+    """Получаем данные по вакансиям работодателей с API сайта """
     v_list = []
     url = "https://api.hh.ru/vacancies"
     params = {'per_page': per_page,
-        'employer_id': employer_id}
+              'employer_id': employer_id}
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
     }
@@ -24,6 +23,12 @@ def get_vacancies(employer_id, per_page = 100):
             if vacancy["salary"] is None:
                 salary_min = None
                 salary_max = None
+            elif vacancy["salary"]["from"] == "0" and vacancy["salary"]["to"] != "0":
+                salary_min = vacancy["salary"]["to"]
+                salary_max = vacancy["salary"]["to"]
+            elif vacancy["salary"]["from"] != "0" and vacancy["salary"]["to"] == "0":
+                salary_min = vacancy["salary"]["from"]
+                salary_max = vacancy["salary"]["from"]
             else:
                 salary_min = vacancy["salary"]["from"]
                 salary_max = vacancy["salary"]["to"]
@@ -42,6 +47,7 @@ def get_vacancies(employer_id, per_page = 100):
 
 
 def get_company_info(employer_id):
+    """Получаем данные по работодателям с API сайта """
     comp_list = []
 
     url = f"https://api.hh.ru/employers/{employer_id}"
@@ -56,15 +62,19 @@ def get_company_info(employer_id):
         company_name = data['name']
         number_of_vacancies = data['open_vacancies']
         comp_dict = {'company_id': company_id,
-                        'company_name': company_name,
-                        'number_of_vacancies': number_of_vacancies}
+                     'company_name': company_name,
+                     'number_of_vacancies': number_of_vacancies}
         comp_list.append(comp_dict)
 
     return comp_list
 
 
+params = config()  # загружаем параметры для подключение к базе данных
+
+
 def create_database(database_name):
-    conn = psycopg2.connect(host='localhost', user='postgres', password='320670', port=5432)
+    """Создаем базу данных с заданным именем """
+    conn = psycopg2.connect(**params)
     conn.autocommit = True
     cur = conn.cursor()
 
@@ -73,7 +83,7 @@ def create_database(database_name):
 
     conn.close()
 
-    conn = psycopg2.connect(host='localhost', database='headhunter', user='postgres', password='320670', port=5432)
+    conn = psycopg2.connect(database='headhunter', **params)
     with conn.cursor() as cur:
         cur.execute("""
             CREATE TABLE company_info (
@@ -93,8 +103,10 @@ def create_database(database_name):
     conn.commit()
     conn.close()
 
+
 def save_data_to_database(data1, data2, database_name):
-    conn = psycopg2.connect(dbname=database_name, host='localhost', user='postgres', password='320670', port=5432)
+    """Загружаем данные, полученные по API, в созданную базу данных. """
+    conn = psycopg2.connect(dbname=database_name, **params)
     cur = conn.cursor()
     for item in data1:
         for m in item:
@@ -104,7 +116,6 @@ def save_data_to_database(data1, data2, database_name):
                 INSERT INTO company_info (company_id, company_name, number_of_vacancies)
                 VALUES (%s, %s, %s)
                 """, values)
-
 
     for vacancy in data2:
         for v in vacancy:
@@ -118,9 +129,3 @@ def save_data_to_database(data1, data2, database_name):
     conn.commit()
     cur.close()
     conn.close()
-
-
-
-
-
-
