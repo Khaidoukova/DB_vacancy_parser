@@ -1,6 +1,7 @@
 from utils import get_vacancies, get_company_info, create_database, save_data_to_database
 from DBManager import DBManager
 from config import config
+from tqdm import tqdm
 
 
 def main():
@@ -12,7 +13,7 @@ def main():
     print("Давайте создадим базу вакансий с сайта HeadHunter.")
     create_database("headhunter")  # создаем базу данных с необходимым нам названием
     print("А теперь давайте заполним базу данными десяти выбранных мной компаний.")
-    for emp_id in employer_ids:
+    for emp_id in tqdm(employer_ids, desc='Загружаю данные работодателей и их вакансий', leave=False):
         data1 = get_vacancies(emp_id)  # получаем данные по вакансиям работодателей
         emp_data.append(data1)
         data2 = get_company_info(emp_id)  # получаем данные по работодателям
